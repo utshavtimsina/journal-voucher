@@ -23,39 +23,51 @@
   
 </v-layout>
     <v-layout row>
-      <v-flex md2>
-       
-      </v-flex>
-      <v-flex md6>
+      <v-spacer></v-spacer>
+      <v-flex md10> <!-- table begins here-->
         <v-card >
           
-          <v-simple-table>
+          <v-simple-table >
             <template v-slot:default>
               <thead>
                 <tr >
                   <th v-for="(item,index) in headers" :key="index" >{{item.text}}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody v-show="editMode" >
                 <tr v-for="(i,keys) in totalrows" :key="keys">
                 <td  v-for="(item,key) in headers" :key="key"> 
                   <div  v-if="userSelects[keys]" >
                     
-                         <v-text-field v-if="userSelects[keys][item.text]" v-model="userSelects[keys][item.text]" ref="bodyelement" name="bodyelement" @keydown.delete="deleteCurrentRow(keys)"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
-                      <v-text-field  v-else :label="nullvaluegiver"  ref="bodyelement" name="bodyelement" @keydown.delete="deleteCurrentRow(keys)"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
+                         <v-text-field v-if="userSelects[keys][item.text]" v-model="userSelects[keys][item.text]" ref="bodyelement" name="bodyelement"   @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
+                      <v-text-field  v-else :label="nullvaluegiver"  ref="bodyelement" name="bodyelement" @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
                   </div>
                  <div  v-else >
-                     <v-text-field  :label="nullvaluegiver" ref="bodyelement"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.delete="deleteCurrentRow(keys)" @keydown.enter="newTab(key,keys)"> </v-text-field>
+                     <v-text-field  :label="nullvaluegiver" ref="bodyelement"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"> </v-text-field>
                  </div>
                  
                 </td>
                 </tr>
               </tbody>
+              <tbody v-show="editMode===false" >
+                  <tr v-for="(i,keys) in totalrows" :key="keys"  class="pa-2 ma-2">
+                    <td  v-for="(item,key) in headers" :key="key" :class="{'active-row-item':tablerowselector === keys}" > 
+                      <div  v-if="userSelects[keys]" >
+                        <v-text-field v-if="userSelects[keys][item.text]" disabled v-model="userSelects[keys][item.text]" ></v-text-field>
+                        <v-text-field  v-else disabled :label="nullvaluegiver" ></v-text-field>
+                      </div>
+                      <div v-else>
+                       <v-text-field  disabled :label="nullvaluegiver" ></v-text-field>
+                      </div>
+                      
+                    </td>
+                  </tr>
+              </tbody>
             </template>
            </v-simple-table>
         </v-card>
       </v-flex>
-       
+       <v-spacer> </v-spacer>
     </v-layout>
     <v-navigation-drawer app v-model="dialog" right temporary>
       <v-card>
@@ -109,6 +121,7 @@ export default {
   data(){
     return{
       date:"",
+      editMode:false,
       totalrows:1,
       deletedList:[],
       dialog:false,
@@ -117,7 +130,7 @@ export default {
       selectedrow:'',
       userSelects:new Object(),
       currentItem: 0,
-      
+      tablerowselector:0,
       nullvaluegiver:'',
       selectedValue:"",
       inputkeypair:'',
@@ -204,16 +217,13 @@ export default {
     }
   },
   
-  created:{
-       getDate(){
-         this.dateFormatted = this.formatDate(new Date());
-        
-       },
-       
-      
+
+    mounted() {
+       document.addEventListener('keydown', this.escapeKeyListener); 
+          
     },
-   
   watch: {
+     
       date () {
        this.dateFormatted = this.formatDate(this.date)
       },
@@ -231,16 +241,53 @@ export default {
      
     },
     methods:{
-      ifdeleted(row){
-       for(var value in this.deletedList){
-         if(row == value){
-           this.nullvaluegiver+="\n";
-           return false;
-            
-         }
-       }
-       return true;
+      escapeKeyListener(evt){
+          if (evt.keyCode === 38) {
+            if(this.editMode ==false){
+              if(this.tablerowselector!=0){
+                this.tablerowselector--;
+              }
+            }
+               
+             // alert("keypre");
+            }
+            else if (evt.keyCode === 40) {
+              if(this.editMode ==false){
+                if(this.tablerowselector+1 !== this.totalrows){
+                  this.tablerowselector++;
+                }
+              }
+               
+            }else if(evt.keyCode ===13){
+             if(this.editMode ==false){
+               this.editMode=true;
+               this.setFocus(this.tablerowselector);
+              
+             }
+              
+                //this.$refs.bodyelement[10].focus();
+                
+              //let focusto= this.tablerowselector*this.headers.length;
+              
+            }else if(evt.keyCode ===27){
+              this.editMode=false;
+            }else if(evt.keyCode ===46){
+              //alert("del pressed");
+               if(this.editMode ==false){
+                  this.deleteCurrentRow(this.tablerowselector);
+                }
+            }
+       
       },
+      setFocus(row){
+         let focusbe = row * this.headers.length;
+         this.$nextTick(function(){
+          this.$refs.bodyelement[focusbe].focus();
+        });
+          
+         // this.nullvaluegiver+="\n";
+      },
+      
       newTab(column,row){
         //alert(column+"cols rows"+row);
         if(column+1 === this.headers.length && this.totalrows ==row+1 ){
@@ -353,5 +400,8 @@ export default {
 <style  scoped>
 .active-item {
   background-color: red;
+}
+.active-row-item{
+  background-color: blue;
 }
 </style>
