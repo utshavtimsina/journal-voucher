@@ -41,11 +41,11 @@
                 <td  v-for="(item,key) in headers" :key="key"> 
                   <div  v-if="userSelects[keys]" >
                     
-                         <v-text-field v-if="userSelects[keys][item.text]" v-model="userSelects[keys][item.text]" ref="bodyelement" name="bodyelement" @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
-                      <v-text-field  v-else :label="nullvaluegiver"  ref="bodyelement" name="bodyelement" @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
+                         <v-text-field v-if="userSelects[keys][item.text]" v-model="userSelects[keys][item.text]" ref="bodyelement" name="bodyelement" @keydown.delete="deleteCurrentRow(keys)"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
+                      <v-text-field  v-else :label="nullvaluegiver"  ref="bodyelement" name="bodyelement" @keydown.delete="deleteCurrentRow(keys)"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.enter="newTab(key,keys)"></v-text-field>
                   </div>
-                 <div  v-else>
-                     <v-text-field  :label="nullvaluegiver" ref="bodyelement"  @keydown.f2="dialogue(item.text,key,keys)"  @keydown.enter="newTab(key,keys)"> </v-text-field>
+                 <div  v-else >
+                     <v-text-field  :label="nullvaluegiver" ref="bodyelement"  @keydown.f2="dialogue(item.text,key,keys)" @keydown.delete="deleteCurrentRow(keys)" @keydown.enter="newTab(key,keys)"> </v-text-field>
                  </div>
                  
                 </td>
@@ -110,6 +110,7 @@ export default {
     return{
       date:"",
       totalrows:1,
+      deletedList:[],
       dialog:false,
       search:'',
       mycurrentindex:'',
@@ -230,6 +231,16 @@ export default {
      
     },
     methods:{
+      ifdeleted(row){
+       for(var value in this.deletedList){
+         if(row == value){
+           this.nullvaluegiver+="\n";
+           return false;
+            
+         }
+       }
+       return true;
+      },
       newTab(column,row){
         //alert(column+"cols rows"+row);
         if(column+1 === this.headers.length && this.totalrows ==row+1 ){
@@ -239,6 +250,42 @@ export default {
         this.$refs.bodyelement[focusbe].focus();
         }
 
+      },
+      deleteCurrentRow(row){
+        let isDeleted =false;
+        let focusbe
+        for (var i=0;i<=this.totalrows; i++) { 
+          
+          if(isDeleted == true && this.userSelects[i]){
+            this.userSelects[i-1] = this.userSelects[i];
+            delete this.userSelects[i];
+          }
+          if(i ==row){
+           delete this.userSelects[i];
+           if(i!=0){
+              
+               if(row+1 === this.totalrows){
+                 focusbe  = (row-1)*this.headers.length;
+               }else{
+                 focusbe  = (row)*this.headers.length;
+               }
+             this.totalrows --;
+            
+           }else{
+              if(this.totalrows !=1){
+               this.totalrows --;
+             }
+             focusbe=0;
+           }
+           this.$refs.bodyelement[focusbe].focus();
+            this.nullvaluegiver+="\n";
+             isDeleted =true;
+            
+          }
+         
+      }  
+     
+        console.log(row);
       },
       dialogue: function(key,index,row){
        
